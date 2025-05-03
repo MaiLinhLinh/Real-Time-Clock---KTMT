@@ -1,0 +1,221 @@
+C51 COMPILER V9.60.7.0   THUVIENLCD                                                        04/26/2025 16:20:01 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE THUVIENLCD
+OBJECT MODULE PLACED IN .\Objects\ThuvienLCD.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ThuvienLCD.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listing
+                    -s\ThuvienLCD.lst) TABS(2) OBJECT(.\Objects\ThuvienLCD.obj)
+
+line level    source
+
+   1          
+   2          #include <REGX51.H>
+   3          #include <intrins.h>
+   4          #include <ThuvienLCd.h>
+   5          
+   6          #define PCF8574A_ADDR 0x3F // Dia chi 7-bit cua PCF8574A (A0=A1=A2=1)
+   7          unsigned char pcf8574a_output_state = 0x08; // Khoi tao: Backlight bat
+   8          #define LCD_RS_BIT (1 << 0) // P0 -> RS
+   9          #define LCD_RW_BIT (1 << 1) // P1 -> RW
+  10          #define LCD_E_BIT  (1 << 2) // P2 -> E (Dam bao khong co khoang trang thua)
+  11          #define LCD_BL_BIT (1 << 3) // P3 -> Backlight (1 = Bat, 0 = Tat) - gia dinh
+  12          unsigned char slave_add;
+  13          
+  14          sbit scl=P0^6;
+  15          sbit sda=P0^7;
+  16          
+  17          void i2c_start(void)
+  18          {
+  19   1        sda=1;_nop_();_nop_(); // it chu ki may qua thi khong nhan duoc tin hieu, nhieu chu ki may qua thi do tre
+             - cao
+  20   1        scl=1;_nop_();_nop_();
+  21   1        sda=0;_nop_();_nop_();
+  22   1      }
+  23          
+  24          void i2c_stop(void)
+  25          {
+  26   1        scl=0;
+  27   1        sda=0;
+  28   1        scl=1;
+  29   1        sda=1;
+  30   1      }
+  31          
+  32          void LCD_Slave(unsigned char slave)
+  33          {
+  34   1        slave_add=slave;
+  35   1      }
+  36          
+  37          void i2c_ACK(void)
+  38          {
+  39   1        scl=0;
+  40   1        sda=1;
+  41   1        scl=1;
+  42   1        while(sda);
+  43   1      }
+  44          
+  45          void i2c_write(unsigned char dat)
+  46          {
+  47   1        unsigned char i;
+  48   1        for(i=0;i<8;i++)
+  49   1        {
+  50   2        scl=0;
+  51   2        sda=(dat&(0x80)>>i)?1:0;
+  52   2        scl=1;
+  53   2        }
+C51 COMPILER V9.60.7.0   THUVIENLCD                                                        04/26/2025 16:20:01 PAGE 2   
+
+  54   1      }
+  55          
+  56          
+  57          void lcd_send_cmd(unsigned char cmd)
+  58          {
+  59   1        unsigned char cmd_l,cmd_u;
+  60   1        
+  61   1        cmd_l=(cmd<<4)&0xf0;
+  62   1        cmd_u=(cmd &0xf0);
+  63   1        
+  64   1        i2c_start();       //BL EN RW RS 1 1 0 0
+  65   1        i2c_write(slave_add);
+  66   1        i2c_ACK();
+  67   1        i2c_write(cmd_u|0x0C);
+  68   1        i2c_ACK();
+  69   1        delay_ms(5);
+  70   1        i2c_write(cmd_u|0x08); // 1 0 0 0
+  71   1        i2c_ACK();
+  72   1        delay_ms(5);
+  73   1        i2c_write(cmd_l|0x0C);   // 1 1 0 0
+  74   1        i2c_ACK();
+  75   1        delay_ms(5);
+  76   1        i2c_write(cmd_l|0x08);
+  77   1        i2c_ACK();
+  78   1        delay_ms(5);
+  79   1        i2c_stop();
+  80   1      }
+  81          
+  82          void LCD_Send_Data(unsigned char dataw)// 1 1 0 1
+  83          {
+  84   1        unsigned char dataw_l,dataw_u;
+  85   1        dataw_l=(dataw<<4)&0xf0;
+  86   1        dataw_u=(dataw &0xf0);
+  87   1        i2c_start();
+  88   1        i2c_write(slave_add);
+  89   1        i2c_ACK();
+  90   1        i2c_write(dataw_u|0x0D);//BL EN RW RS   1 1 0 1
+  91   1        i2c_ACK();
+  92   1        delay_ms(5);
+  93   1        i2c_write(dataw_u|0x09);// 1 0 0 1
+  94   1        i2c_ACK();
+  95   1        delay_ms(5);
+  96   1        i2c_write(dataw_l|0x0D);
+  97   1        i2c_ACK();
+  98   1        delay_ms(5);
+  99   1        i2c_write(dataw_l|0x09);
+ 100   1        i2c_ACK();
+ 101   1        delay_ms(5);
+ 102   1        i2c_stop();
+ 103   1      }
+ 104          
+ 105          void LCD_Send_String(unsigned char *p)
+ 106          {
+ 107   1        while(*p != '\0')
+ 108   1        LCD_Send_Data(*p++);
+ 109   1      }
+ 110          
+ 111          
+ 112          void delay_ms(unsigned int n)
+ 113          {
+ 114   1        unsigned int m;
+ 115   1        for(n;n>0;n--)
+C51 COMPILER V9.60.7.0   THUVIENLCD                                                        04/26/2025 16:20:01 PAGE 3   
+
+ 116   1        {
+ 117   2          for(m=121;m>0;m--);
+ 118   2          _nop_();
+ 119   2          _nop_();
+ 120   2          _nop_();
+ 121   2          _nop_();
+ 122   2          _nop_();
+ 123   2          _nop_();
+ 124   2        }
+ 125   1      }
+ 126          
+ 127          void LCD_Init()
+ 128          {
+ 129   1        lcd_send_cmd(0x02); // Return home
+ 130   1        lcd_send_cmd(0x28); // 4 bit mode (D4 - D7), 2 dong, font 5x7
+ 131   1        lcd_send_cmd(0x0C); // Display On , cursor off
+ 132   1        lcd_send_cmd(0x06); // Increment Cursor (shift cursor to right)
+ 133   1        lcd_send_cmd(0x01); // clear display
+ 134   1      }
+ 135          
+ 136          void LCD_Gotoxy (int col, int row)
+ 137          {
+ 138   1        int pos_Addr;
+ 139   1        if(row == 1) 
+ 140   1        {
+ 141   2          pos_Addr = 0x80 + row - 2 + col;
+ 142   2        }
+ 143   1        else
+ 144   1        {
+ 145   2          pos_Addr = 0x80 | (0x40 + col - 1);
+ 146   2        }
+ 147   1        lcd_send_cmd(pos_Addr);
+ 148   1      }
+ 149          
+ 150          void LCD_Send_Number(int number)
+ 151          {
+ 152   1        if(number <= 9)
+ 153   1        {
+ 154   2          LCD_Send_Data(number + 48);
+ 155   2        }
+ 156   1        else if(number > 9 && number < 100)
+ 157   1        {
+ 158   2          LCD_Send_Data(number/10 + 48);
+ 159   2          LCD_Send_Data(number%10 + 48);
+ 160   2        }
+ 161   1        else if(number > 99 && number < 1000)
+ 162   1        {
+ 163   2          LCD_Send_Data(number/100 + 48);
+ 164   2          LCD_Send_Data(number/10%10 + 48);
+ 165   2          LCD_Send_Data(number%10 + 48);
+ 166   2        }
+ 167   1        else if(number > 999 && number < 10000)
+ 168   1        {
+ 169   2          LCD_Send_Data(number/1000 + 48);
+ 170   2          LCD_Send_Data(number/100%10 + 48);
+ 171   2          LCD_Send_Data(number/10%10 + 48);
+ 172   2          LCD_Send_Data(number%10 + 48);
+ 173   2        }
+ 174   1      }
+ 175          
+ 176          
+ 177          
+C51 COMPILER V9.60.7.0   THUVIENLCD                                                        04/26/2025 16:20:01 PAGE 4   
+
+ 178          
+ 179          
+ 180          
+ 181          
+ 182          
+ 183          void LCD_Clear()
+ 184          {
+ 185   1        LCD_Gotoxy(1,1);
+ 186   1        LCD_Send_String("                ");
+ 187   1        LCD_Gotoxy(1,2);
+ 188   1        LCD_Send_String("                ");
+ 189   1      }
+ 190          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    588    ----
+   CONSTANT SIZE    =     17    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2      11
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

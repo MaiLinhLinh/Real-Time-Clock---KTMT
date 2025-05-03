@@ -1,0 +1,5 @@
+".\Objects\fileLCDcode.obj",
+".\Objects\ThuvienLCD.obj",
+".\Objects\Real_Time_DS1307.obj" 
+TO ".\Objects\LCD_Displaycode" 
+PRINT(".\Listings\LCD_Displaycode.m51") RAMSIZE(256) 

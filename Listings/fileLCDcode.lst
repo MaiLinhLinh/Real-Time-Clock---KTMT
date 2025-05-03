@@ -1,0 +1,201 @@
+C51 COMPILER V9.60.7.0   FILELCDCODE                                                       04/26/2025 16:20:01 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE FILELCDCODE
+OBJECT MODULE PLACED IN .\Objects\fileLCDcode.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE fileLCDcode.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listin
+                    -gs\fileLCDcode.lst) TABS(2) OBJECT(.\Objects\fileLCDcode.obj)
+
+line level    source
+
+   1          
+   2          #include <REGX51.H>
+   3          #include <ThuvienLCd.h>
+   4          #include <Real_Time_DS1307.H>
+   5          
+   6          unsigned char slave1 = 0X7E;
+   7          unsigned int hour, minute, second;
+   8          unsigned int day, date, month, year;
+   9          sbit thaydoithoigian = P1^1; // R5 -> P1.1 -> Mode/Select
+  10          sbit tang  = P1^4; // R8 -> P1.4 -> Tang (+)
+  11          sbit giam  = P1^7; // R6 -> P1.7 -> Giam (-)
+  12          sbit thaydoichedo = P1^6; // R9
+  13          sbit chonchedo = P1^0;
+  14          #define Buzz P3_0
+  15          
+  16          
+  17          
+  18          
+  19          unsigned char gio = 0;    // Bien luu tru gio
+  20          unsigned char phut = 0;   // Bien luu tru phut
+  21          unsigned char giay = 0;   // Bien luu tru giay
+  22          unsigned char mode = 0;   // Bien luu che do hoat dong
+  23                                    // 0: Hien thi binh thuong
+  24          unsigned char ngay = 0;
+  25          unsigned char thang = 0;
+  26          unsigned char nam = 0;
+  27          unsigned char mode1 = 1;                          // 1: Chinh Gio
+  28                                  // 2: Chinh Phut
+  29                                  // 3: Chinh Giay
+  30          
+  31          
+  32          int dem1=0;
+  33          
+  34          void delay(long time)
+  35          {
+  36   1        time = time * 25;
+  37   1        while(time--) {}
+  38   1      }
+  39          
+  40          void main(void)
+  41          { 
+  42   1        Buzz = 0;
+  43   1        //DS1307_Init();
+  44   1        
+  45   1        LCD_Slave(slave1);
+  46   1        LCD_Init();
+  47   1      
+  48   1        
+  49   1        LCD_Gotoxy(1,1); // cot dau tien - hang dau tien
+  50   1        LCD_Send_String("KTMT");
+  51   1        LCD_Gotoxy(1,2); // cot dau tien - hang dau tien
+  52   1        LCD_Send_String("NHOM @@@@");
+  53   1        delay_ms(10);
+  54   1        
+C51 COMPILER V9.60.7.0   FILELCDCODE                                                       04/26/2025 16:20:01 PAGE 2   
+
+  55   1        LCD_Clear();
+  56   1        DS1307_Init();
+  57   1        
+  58   1        while(1){
+  59   2          if(thaydoichedo == 0)
+  60   2          {
+  61   3             mode = !mode;
+  62   3             //while(thaydoichedo == 0)
+  63   3             LCD_Clear();
+  64   3           }
+  65   2          if(mode == 0){
+  66   3              LCD_Slave(slave1);
+  67   3              DS1307_Read_Time(&hour, &minute, &second);
+  68   3              LCD_Gotoxy(1,1); // cot dau tien - hang dau tien
+  69   3              LCD_Send_String("TIME: ");
+  70   3              if(hour < 10) LCD_Send_Data('0');
+  71   3              LCD_Send_Number(hour);
+  72   3              LCD_Send_Data(':');
+  73   3              if(minute < 10) LCD_Send_Data('0');
+  74   3              LCD_Send_Number(minute);
+  75   3              LCD_Send_Data(':');
+  76   3              if(second < 10) LCD_Send_Data('0');
+  77   3              LCD_Send_Number(second);
+  78   3              
+  79   3              
+  80   3              DS1307_Read_Date(&day, &date, &month, &year);
+  81   3              LCD_Gotoxy(1,2); // cot dau tien - hang dau tien
+  82   3              LCD_Send_String("DATE: ");
+  83   3              if(date < 10) LCD_Send_Data('0');
+  84   3              LCD_Send_Number(date);
+  85   3              LCD_Send_Data('/');
+  86   3              if(month < 10) LCD_Send_Data('0');
+  87   3              LCD_Send_Number(month);
+  88   3              LCD_Send_Data('/');
+  89   3              LCD_Send_Number(year + 2000);  // neu year = 22 thì in ra 2022
+  90   3              
+  91   3              
+  92   3              if(hour == gio && minute == phut && second == giay){
+  93   4                Buzz = 1; delay_ms(250); Buzz = 0; delay_ms(250);
+  94   4                Buzz = 1; delay_ms(250); Buzz = 0; delay_ms(250);
+  95   4                Buzz = 1; delay_ms(250); Buzz = 0; delay_ms(250);
+  96   4                Buzz = 1; delay_ms(250); Buzz = 0; delay_ms(250);
+  97   4              }
+  98   3        
+  99   3          }
+ 100   2          else{
+ 101   3            LCD_Gotoxy(1,1); // cot dau tien - hang dau tien
+ 102   3            LCD_Send_String("ALARM ");
+ 103   3            LCD_Gotoxy(1,2); // cot dau tien - hang dau tien
+ 104   3            if(gio < 10) LCD_Send_Data('0');
+ 105   3            LCD_Send_Number(gio);
+ 106   3            LCD_Send_Data(':');
+ 107   3            if(phut < 10) LCD_Send_Data('0');
+ 108   3            LCD_Send_Number(phut);
+ 109   3            LCD_Send_Data(':');
+ 110   3            if(giay < 10) LCD_Send_Data('0');
+ 111   3            LCD_Send_Number(giay);
+ 112   3            
+ 113   3            
+ 114   3            
+ 115   3            
+ 116   3            if(thaydoithoigian == 0)
+C51 COMPILER V9.60.7.0   FILELCDCODE                                                       04/26/2025 16:20:01 PAGE 3   
+
+ 117   3            {
+ 118   4              //delay_ms(1);
+ 119   4              mode1++;
+ 120   4              //while(thaydoithoigian == 0);
+ 121   4             }
+ 122   3      
+ 123   3            // Nút tang
+ 124   3            if(tang == 0)
+ 125   3            {
+ 126   4               //delay_ms(1);
+ 127   4               if(mode1 % 3 == 1) {
+ 128   5                  gio++;
+ 129   5                  if(gio > 23) gio = 0;
+ 130   5                } else if(mode1 % 3 == 2){
+ 131   5                  phut++;
+ 132   5                  if(phut > 59) phut = 0;
+ 133   5                }
+ 134   4                else{
+ 135   5                  giay++;
+ 136   5                  if(giay>59) giay = 0;
+ 137   5                }
+ 138   4            
+ 139   4                //while(tang == 0){;}
+ 140   4      
+ 141   4             }
+ 142   3             // Nút giam
+ 143   3            if(giam == 0)
+ 144   3            {
+ 145   4              //delay_ms(1);
+ 146   4              if(mode1 % 3 == 1) {
+ 147   5                 if(gio == 0) gio = 23;
+ 148   5                 else gio--;
+ 149   5              } else if(mode1 % 3 == 2){
+ 150   5                if(phut == 0) phut = 59;
+ 151   5                else phut--;
+ 152   5              }
+ 153   4              else{
+ 154   5                  if(giay == 0) giay = 59;
+ 155   5                  else giay--;
+ 156   5                }
+ 157   4                
+ 158   4                //while(giam == 0){;}
+ 159   4            }
+ 160   3                          
+ 161   3              
+ 162   3          }
+ 163   2          
+ 164   2        }
+ 165   1        
+ 166   1      
+ 167   1        LCD_Clear();    
+ 168   1      }
+ 169          
+ 170          
+*** WARNING C294 IN LINE 167 OF fileLCDcode.c: unreachable code
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    721    ----
+   CONSTANT SIZE    =     36    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+C51 COMPILER V9.60.7.0   FILELCDCODE                                                       04/26/2025 16:20:01 PAGE 4   
+
+   DATA SIZE        =     25       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)
